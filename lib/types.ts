@@ -4,7 +4,7 @@
 export interface EmergencyContact {
   name: string;
   relation: string;
-  phone: string; // e10-digit Indian mobile, stored with country code
+  phone: string; // 10-digit Indian mobile, stored with country code
 }
 
 export interface Profile {
@@ -19,4 +19,58 @@ export interface Profile {
   organDonor: boolean;
   primaryContact: EmergencyContact;
   secondaryContact: EmergencyContact;
+}
+
+// ─── Supabase RPC types ───────────────────────────────────────────────────────
+
+/** Shape of one contact row returned by get_public_profile(). */
+export interface PublicContactRow {
+  name: string;
+  relation: string;
+  phone: string;
+  is_primary: boolean;
+}
+
+/**
+ * Exact JSON shape returned by the Postgres function get_public_profile().
+ * Column names are snake_case to match what Postgres returns.
+ * No PII beyond what a first-responder needs: no user_id, no address.
+ */
+export interface PublicProfileRow {
+  name: string;
+  age: number;
+  gender: "Male" | "Female" | "Other";
+  blood_group: string;
+  allergies: string[];
+  conditions: string[];
+  medications: string[];
+  organ_donor: boolean;
+  contacts: PublicContactRow[];
+}
+
+/**
+ * Map a PublicProfileRow (DB snake_case) → Profile (app camelCase).
+ * Falls back gracefully when contacts are missing.
+ */
+export function mapPublicRowToProfile(row: PublicProfileRow): Profile {
+  const primary = row.contacts.find((c) => c.is_primary) ?? row.contacts[0];
+  const secondary = row.contacts.find((c) => !c.is_primary) ?? row.contacts[1];
+
+  return {
+    id: "db",
+    name: row.name,
+    age: row.age,
+    gender: row.gender,
+    bloodGroup: row.blood_group,
+    allergies: row.allergies ?? [],
+    conditions: row.conditions ?? [],
+    medications: row.medications ?? [],
+    organDonor: row.organ_donor,
+    primaryContact: primary
+      ? { name: primary.name, relation: primary.relation, phone: primary.phone }
+      : { name: "—", relation: "—", phone: "" },
+    secondaryContact: secondary
+      ? { name: secondary.name, relation: secondary.relation, phone: secondary.phone }
+      : { name: "—", relation: "—", phone: "" },
+  };
 }
