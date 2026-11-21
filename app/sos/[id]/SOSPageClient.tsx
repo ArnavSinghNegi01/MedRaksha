@@ -9,6 +9,7 @@ import BloodGroupBadge from "@/components/BloodGroupBadge";
 import AllergyChip from "@/components/AllergyChip";
 import EmergencyCallButtons from "@/components/EmergencyCallButtons";
 import ShareLocationButton from "@/components/ShareLocationButton";
+import FeedbackButton from "@/components/FeedbackButton";
 import { Heart, Pill, Activity, Gift } from "lucide-react";
 
 interface Props {
@@ -144,10 +145,11 @@ export default function SOSPageClient({ profile }: Props) {
       </div>
 
       {/* ── FOOTER ───────────────────────────────────────────── */}
-      <div className="mt-8 px-4 text-center">
+      <div className="mt-8 px-4 text-center flex flex-col items-center">
         <p className="text-xs text-gray-400">
           MedRaksha Emergency Medical ID · Powered by QR scan
         </p>
+        <FeedbackButton variant="inline" />
       </div>
     </main>
   );

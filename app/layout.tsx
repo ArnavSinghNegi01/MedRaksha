@@ -1,6 +1,7 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import FeedbackButton from "@/components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "MedRaksha – Emergency Medical ID",
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-white">{children}</body>
+      <body className="min-h-screen bg-white">
+        {children}
+        <FeedbackButton />
+      </body>
     </html>
   );
 }
