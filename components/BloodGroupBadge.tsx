@@ -37,9 +37,9 @@ export default function BloodGroupBadge({ bloodGroup, size = "xl" }: Props) {
   return (
     <div
       className={`inline-flex items-center justify-center font-black tracking-wider shadow-lg ${colourClass} ${sizeClass}`}
-      aria-label={`Blood group ${bloodGroup}`}
+      aria-label={`Blood group ${bloodGroup || "unknown"}`}
     >
-      {bloodGroup}
+      {bloodGroup || "—"}
     </div>
   );
 }

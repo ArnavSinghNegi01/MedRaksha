@@ -24,10 +24,10 @@ open http://localhost:3000
 | URL | Description |
 |-----|-------------|
 | `/` | Redirects to `/dashboard` |
-| `/dashboard` | Profile dashboard with Edit form (localStorage) |
-| `/card` | Emergency card with QR code + Download button |
+| `/dashboard` | Profile dashboard with Edit form (Supabase) |
+| `/card` | Emergency card with QR code + Download button (Supabase) |
 | `/sos/raksha-001` | Public emergency page (sample profile – no login) |
-| `/sos/[any-other-id]` | "Profile Not Found" page |
+| `/sos/[any-other-id]` | Public emergency page for any user's `public_id` or 404 |
 
 ---
 
@@ -54,7 +54,9 @@ components/
 lib/
   types.ts             Profile TypeScript interface
   sampleProfile.ts     Fake patient data (Arjun Mehra, B+)
-  profileStorage.ts    loadProfile / saveProfile (localStorage)
+  supabase/
+    client.ts          Browser Supabase client
+    server.ts          Server Supabase client
   utils.ts             cn() helper + blood group → colour
 ```
 
@@ -62,6 +64,6 @@ lib/
 
 ## Notes
 
-- `/sos/[id]` uses the **fixed sample profile** (`raksha-001`). It does NOT read localStorage so a stranger scanning the QR always sees the correct data.
-- The **Dashboard** and **Card** pages read from localStorage; the first visit falls back to the sample profile.
-- No login, no backend, no database — all data is local.
+- `/sos/[id]` calls the Postgres `get_public_profile(p_public_id)` function.
+- The **Dashboard** and **Card** pages read from and write to Supabase (scoped to the authenticated user).
+- No direct table access: the public emergency page uses a `SECURITY DEFINER` function with safe survival fields only.

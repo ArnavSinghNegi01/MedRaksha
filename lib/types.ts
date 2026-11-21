@@ -8,7 +8,8 @@ export interface EmergencyContact {
 }
 
 export interface Profile {
-  id: string;
+  id?: string;
+  publicId?: string;
   name: string;
   age: number;
   gender: "Male" | "Female" | "Other";

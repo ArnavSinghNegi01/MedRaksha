@@ -6,7 +6,6 @@ import { QRCodeSVG } from "qrcode.react";
 import { toPng } from "html-to-image";
 import { Download } from "lucide-react";
 import type { Profile } from "@/lib/types";
-import { SAMPLE_ID } from "@/lib/sampleProfile";
 
 // Full literal class strings — same rule as BloodGroupBadge: no dynamic assembly,
 // no imports from lib/, so Tailwind's scanner always sees every class name.
@@ -29,11 +28,12 @@ interface Props {
 export default function QRCard({ profile }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Build QR URL using the fixed sample ID so the public page always resolves
+  // Build QR URL using the signed-in user profile's public_id
+  const targetId = profile.publicId || "";
   const qrUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/sos/${SAMPLE_ID}`
-      : `/sos/${SAMPLE_ID}`;
+      ? `${window.location.origin}/sos/${targetId}`
+      : `/sos/${targetId}`;
 
   async function handleDownload() {
     if (!cardRef.current) return;

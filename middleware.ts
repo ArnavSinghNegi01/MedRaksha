@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
           // Write cookies onto both the outgoing request and response so the
           // refreshed session is available to Server Components in the same render.
           cookiesToSet.forEach(({ name, value }) =>
