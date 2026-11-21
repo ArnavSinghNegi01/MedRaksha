@@ -105,3 +105,27 @@ export const DOCUMENT_TYPES: DocumentType[] = [
   "Insurance",
   "Other",
 ];
+
+// ─── AI Medical Scanner types ─────────────────────────────────────────────────
+
+export interface ConditionItem {
+  name: string;
+  explanation: string;
+}
+
+export interface MedicationItem {
+  name: string;
+  dose: string;
+  frequency: string;
+  explanation: string;
+}
+
+export interface ScanResult {
+  documentType: string;
+  summary: string;
+  conditions: ConditionItem[];
+  medications: MedicationItem[];
+  allergies: string[];
+  alerts: string[];
+  unclear: string[];
+}

@@ -1,7 +1,7 @@
 // components/ProfileForm.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Profile } from "@/lib/types";
 import { X, Plus, AlertCircle, Loader2 } from "lucide-react";
 
@@ -99,6 +99,10 @@ export default function ProfileForm({ initial, onSave, onCancel }: Props) {
   const [form, setForm] = useState<Profile>(initial);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setForm(initial);
+  }, [initial]);
 
   function set<K extends keyof Profile>(key: K, value: Profile[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
