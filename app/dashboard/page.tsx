@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import ProfileForm from "@/components/ProfileForm";
 import BloodGroupBadge from "@/components/BloodGroupBadge";
 import ScanReviewModal from "@/components/ScanReviewModal";
+import CameraCapture from "@/components/CameraCapture";
 import {
   Edit2,
   QrCode,
@@ -158,6 +159,9 @@ export default function DashboardPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [useFallbackCamera, setUseFallbackCamera] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -257,24 +261,6 @@ export default function DashboardPage() {
     };
   }, [previewUrl]);
 
-  // Trigger rear camera on phones
-  function handleTriggerCamera() {
-    setScanError(null);
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = "";
-      cameraInputRef.current.click();
-    }
-  }
-
-  // Trigger file picker (PNG, JPEG, PDF)
-  function handleTriggerUpload() {
-    setScanError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-      fileInputRef.current.click();
-    }
-  }
-
   // Clear preview and reset scanner
   function handleRetake() {
     if (previewUrl) {
@@ -287,12 +273,35 @@ export default function DashboardPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  // Handle selected image (resized to max 1600px, JPEG 0.8) or PDF (<= 4 MB)
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const file = files[0];
+  // Open live full-screen camera overlay
+  function handleOpenLiveCamera() {
+    setCameraError(null);
+    setScanError(null);
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+      setCameraError("Camera not available here. Choose a photo instead.");
+      setUseFallbackCamera(true);
+      return;
+    }
+    setIsCameraOpen(true);
+  }
 
+  // Handle camera errors (permission denied vs camera unavailable)
+  function handleCameraError(reason: "denied" | "unavailable") {
+    setIsCameraOpen(false);
+    setUseFallbackCamera(true);
+    if (reason === "denied") {
+      setCameraError("Allow camera access to scan a document.");
+    } else {
+      setCameraError("Camera not available here. Choose a photo instead.");
+    }
+  }
+
+  // Process chosen or captured file into the scanner pipeline
+  async function processSelectedFile(file: File) {
     setScanError(null);
 
     // If PDF, check if size is over 4 MB
@@ -334,6 +343,22 @@ export default function DashboardPage() {
       console.error("[Dashboard] Error preparing image:", err);
       setScanError("Could not process image. Please try another photo.");
     }
+  }
+
+  // Handle photo captured from live CameraCapture component
+  async function handleCameraCapture(file: File) {
+    setIsCameraOpen(false);
+    setCameraError(null);
+    setScanError(null);
+    await processSelectedFile(file);
+  }
+
+  // Handle selected image or PDF from file input
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    await processSelectedFile(file);
   }
 
   // Execute scan request to /api/scan
@@ -521,25 +546,6 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 pb-10">
-      {/* Hidden file input for camera: capture="environment" opens rear camera on phones */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleFileSelected}
-      />
-
-      {/* Hidden file input for file upload: accepts image/png, image/jpeg, application/pdf */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png,image/jpeg,application/pdf"
-        className="hidden"
-        onChange={handleFileSelected}
-      />
-
       {/* AI Scanning Loading Overlay */}
       {isScanning && (
         <div
@@ -570,6 +576,15 @@ export default function DashboardPage() {
             setScanResult(null);
             handleRetake();
           }}
+        />
+      )}
+
+      {/* In-page Live Camera Overlay */}
+      {isCameraOpen && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onCancel={() => setIsCameraOpen(false)}
+          onError={handleCameraError}
         />
       )}
 
@@ -633,14 +648,21 @@ export default function DashboardPage() {
             <h1 className="text-xl font-black text-gray-900">
               {isProfileEmpty ? "Create Emergency Profile" : "Edit Profile"}
             </h1>
-            <button
-              type="button"
-              onClick={handleTriggerUpload}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:scale-95 transition-transform"
+            <label
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:scale-95 transition-transform cursor-pointer ${
+                isScanning ? "opacity-50 pointer-events-none" : ""
+              }`}
             >
+              <input
+                type="file"
+                accept="image/png,image/jpeg,application/pdf"
+                className="sr-only"
+                disabled={isScanning}
+                onChange={handleFileSelected}
+              />
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               <span>Scan Report</span>
-            </button>
+            </label>
           </div>
           <ProfileForm
             key={JSON.stringify(profile)}
@@ -796,26 +818,63 @@ export default function DashboardPage() {
               </div>
             ) : (
               /* Two actions: Take Photo & Upload File */
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleTriggerCamera}
-                  disabled={isScanning}
-                  className="flex items-center justify-center gap-2 py-3 px-3 font-bold rounded-xl border-2 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:scale-95 transition-transform text-xs sm:text-sm disabled:opacity-50"
-                >
-                  <Camera className="w-4 h-4 shrink-0" />
-                  <span>Take Photo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTriggerUpload}
-                  disabled={isScanning}
-                  className="flex items-center justify-center gap-2 py-3 px-3 font-bold rounded-xl border-2 border-gray-200 text-gray-700 bg-white hover:bg-gray-50 active:scale-95 transition-transform text-xs sm:text-sm disabled:opacity-50"
-                >
-                  <Upload className="w-4 h-4 shrink-0" />
-                  <span>Upload File</span>
-                </button>
-              </div>
+              <>
+                {cameraError && (
+                  <div className="mb-3 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold p-3 rounded-xl">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{cameraError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {useFallbackCamera ? (
+                    <label
+                      className={`flex items-center justify-center gap-2 py-3 px-3 font-bold rounded-xl border-2 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:scale-95 transition-transform text-xs sm:text-sm cursor-pointer ${
+                        isScanning ? "opacity-50 pointer-events-none" : ""
+                      }`}
+                    >
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        disabled={isScanning}
+                        onChange={handleFileSelected}
+                      />
+                      <Camera className="w-4 h-4 shrink-0" />
+                      <span>Take Photo</span>
+                    </label>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleOpenLiveCamera}
+                      disabled={isScanning}
+                      className="flex items-center justify-center gap-2 py-3 px-3 font-bold rounded-xl border-2 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:scale-95 transition-transform text-xs sm:text-sm disabled:opacity-50"
+                    >
+                      <Camera className="w-4 h-4 shrink-0" />
+                      <span>Take Photo</span>
+                    </button>
+                  )}
+
+                  <label
+                    className={`flex items-center justify-center gap-2 py-3 px-3 font-bold rounded-xl border-2 border-gray-200 text-gray-700 bg-white hover:bg-gray-50 active:scale-95 transition-transform text-xs sm:text-sm cursor-pointer ${
+                      isScanning ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,application/pdf"
+                      className="sr-only"
+                      disabled={isScanning}
+                      onChange={handleFileSelected}
+                    />
+                    <Upload className="w-4 h-4 shrink-0" />
+                    <span>Upload File</span>
+                  </label>
+                </div>
+              </>
             )}
 
             {scanError && (
