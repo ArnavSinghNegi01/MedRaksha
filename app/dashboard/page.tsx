@@ -1,6 +1,7 @@
 // app/dashboard/page.tsx
 // Profile Dashboard – shows saved profile; Edit button opens the form.
 // Reads from / writes to localStorage.
+// Auth-protected by middleware.ts – unauthenticated users are redirected to /login.
 
 "use client";
 
@@ -8,9 +9,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
 import { loadProfile } from "@/lib/profileStorage";
+import { createClient } from "@/lib/supabase/client";
 import ProfileForm from "@/components/ProfileForm";
 import BloodGroupBadge from "@/components/BloodGroupBadge";
-import { Edit2, QrCode, Heart, Pill, Activity, User, Phone, Gift } from "lucide-react";
+import { Edit2, QrCode, Heart, Pill, Activity, User, Phone, Gift, LogOut } from "lucide-react";
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -47,10 +49,25 @@ export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     setProfile(loadProfile());
+    // Fetch the signed-in user's email to display in the header
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
   }, []);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   if (!profile) {
     return (
@@ -64,17 +81,34 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-gray-50 pb-10">
       {/* ── HEADER ───────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-red-600 font-black text-lg">❤</span>
-          <span className="font-black text-gray-900 text-lg tracking-tight">MedRaksha</span>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <span className="text-red-600 font-black text-lg">❤</span>
+            <span className="font-black text-gray-900 text-lg tracking-tight">MedRaksha</span>
+          </div>
+          {userEmail && (
+            <span className="text-xs text-gray-400 ml-6 -mt-0.5 truncate max-w-[180px]">
+              {userEmail}
+            </span>
+          )}
         </div>
-        <button
-          onClick={() => router.push("/card")}
-          className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-xl shadow"
-        >
-          <QrCode className="w-4 h-4" />
-          My Emergency Card
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/card")}
+            className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-xl shadow"
+          >
+            <QrCode className="w-4 h-4" />
+            My Card
+          </button>
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            aria-label="Sign out"
+            className="flex items-center justify-center w-9 h-9 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-red-200 hover:text-red-600 transition-colors disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {editing ? (
