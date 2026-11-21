@@ -75,3 +75,33 @@ export function mapPublicRowToProfile(row: PublicProfileRow): Profile {
       : { name: "—", relation: "—", phone: "" },
   };
 }
+
+// ─── Document Vault types ─────────────────────────────────────────────────────
+
+export type DocumentType =
+  | "Prescription"
+  | "Lab report"
+  | "Discharge summary"
+  | "Scan / imaging"
+  | "Insurance"
+  | "Other";
+
+export interface MedicalDocument {
+  id: string;
+  user_id?: string;
+  title: string;
+  doc_type: DocumentType;
+  doc_date: string;
+  file_path: string;
+  file_name: string;
+  created_at: string;
+}
+
+export const DOCUMENT_TYPES: DocumentType[] = [
+  "Prescription",
+  "Lab report",
+  "Discharge summary",
+  "Scan / imaging",
+  "Insurance",
+  "Other",
+];

@@ -11,7 +11,7 @@ import type { Profile } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import ProfileForm from "@/components/ProfileForm";
 import BloodGroupBadge from "@/components/BloodGroupBadge";
-import { Edit2, QrCode, Heart, Pill, Activity, User, Phone, Gift, LogOut, AlertCircle } from "lucide-react";
+import { Edit2, QrCode, Heart, Pill, Activity, User, Phone, Gift, LogOut, AlertCircle, FolderLock } from "lucide-react";
 
 const EMPTY_PROFILE: Profile = {
   name: "",
@@ -332,13 +332,22 @@ export default function DashboardPage() {
                   Create your profile with vital medical details and emergency contacts so responders can save valuable minutes.
                 </p>
               </div>
-              <button
-                onClick={() => setEditing(true)}
-                className="flex items-center justify-center gap-2 w-full py-3.5 font-bold rounded-2xl bg-blue-600 text-white shadow active:scale-95 transition-transform"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit Profile
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full mt-1">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 font-bold rounded-2xl bg-blue-600 text-white shadow active:scale-95 transition-transform text-sm"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => router.push("/vault")}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 font-bold rounded-2xl border-2 border-gray-200 text-gray-800 bg-white hover:bg-gray-50 active:scale-95 transition-transform shadow-xs text-sm"
+                >
+                  <FolderLock className="w-4 h-4 text-blue-600" />
+                  My Documents
+                </button>
+              </div>
             </div>
           )}
 
@@ -365,15 +374,24 @@ export default function DashboardPage() {
             <BloodGroupBadge bloodGroup={profile.bloodGroup} size="lg" />
           </div>
 
-          {/* Edit button */}
+          {/* Actions */}
           {!isProfileEmpty && (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center justify-center gap-2 w-full rounded-2xl py-3 font-bold border-2 border-blue-200 text-blue-700 bg-blue-50 active:scale-95 transition-transform"
-            >
-              <Edit2 className="w-4 h-4" />
-              Edit Profile
-            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center justify-center gap-2 w-full rounded-2xl py-3.5 font-bold border-2 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100/60 active:scale-95 transition-transform text-sm"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit Profile
+              </button>
+              <button
+                onClick={() => router.push("/vault")}
+                className="flex items-center justify-center gap-2 w-full rounded-2xl py-3.5 font-bold border-2 border-gray-200 text-gray-800 bg-white hover:bg-gray-50 active:scale-95 transition-transform text-sm shadow-xs"
+              >
+                <FolderLock className="w-4 h-4 text-blue-600" />
+                My Documents
+              </button>
+            </div>
           )}
 
           {/* Allergies */}
